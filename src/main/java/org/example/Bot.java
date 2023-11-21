@@ -9,6 +9,8 @@ import java.util.ArrayList;
 
 public class Bot extends TelegramLongPollingBot {
     ArrayList<Long> IDs = new ArrayList<>();
+    boolean isInput = false;
+    String lastCommand = "";
     @Override
     public String getBotUsername() {
         return "Kino Bot Riga";
@@ -22,22 +24,35 @@ public class Bot extends TelegramLongPollingBot {
     @Override
     public void onUpdateReceived(Update update) {
         var msg = update.getMessage();
+        var user = msg.getFrom();
+        ifExists(user.getId());
         if(msg.isCommand()){
             if(msg.getText().equals("/echoall")){
-                echoAll();
-            }else if(msg.getText().equals("/deleteevryone")){
-                deleteEveryone();
-            };
+                echoAll(user.getId(), false, ".");
+            }
+        }
+        if(isInput == true){
+            switch (lastCommand){
+                case "echoAll":
+                    echoAll(user.getId(), true, msg.getText());
+                    break;
+            }
         }
 
     }
 
-    public void deleteEveryone(){
 
-    }
-
-    public void echoAll(){
-
+    public void echoAll(Long userID, boolean time, String text){
+        if(!time) {
+            sendText(userID, "Send your text to echo");
+            isInput = true;
+            lastCommand = "echoAll";
+        }else{
+            for(Long id: IDs){
+                sendText(id, text);
+                isInput = false;
+            }
+        }
     }
 
     public boolean ifExists(Long userID){
