@@ -12,7 +12,7 @@ public class Main {
 
         Movie s;
         s= new Movie("", "", "", "", "");
-        s.ScrapForumCinemas();
+        s.ScrapKino("apollo", "https://www.apollokino.lv/movies");
 
     }
 }

@@ -18,8 +18,8 @@ public class Movie {
     private String length;
     private String startDate;
     private String linkTo;
-    //sBxI7efFgKzbyrgK
-    ArrayList<Movie> Movies = new ArrayList<>();
+    //
+    public ArrayList<Movie> Movies = new ArrayList<>();
 
     public void ScrapKino(String attr, String link){
         String url = link;
@@ -60,7 +60,7 @@ public class Movie {
     }
 
     public void ScrapApollo(Document doc){
-        Elements movies = doc.getElementsByClass("schedule-item");
+        Elements movies = doc.getElementsByClass("schedule__item");
         for (Element movie : movies) {
             ScrapKino("apolloPage", movie.select(".movie-card__title").select("a").attr("href"));
         }
@@ -69,7 +69,7 @@ public class Movie {
     public void ScrapApolloPage(Document doc, String link){
         Elements movies = doc.getElementsByClass("main");
         for (Element movie : movies) {
-            Movies.add(elemensToStorageApollo(movie, link));
+            Movies.add(elemensToStorageApollo(movie, link, doc));
         }
     }
 
@@ -80,6 +80,7 @@ public class Movie {
         }else{
             origName = movie.select(".event-original-name").text();
         }
+        System.out.println("ScrappedForum");
 
         return new Movie(movie.select(".event-name").not(".hidden").text(),
                 origName, movie.select(".event-running-time").text(),
@@ -87,20 +88,38 @@ public class Movie {
                 "https://www.forumcinemas.lv" + movie.select(".event-name").not("hidden").select("a").attr("href"));
     }
 
-    public Movie elemensToStorageApollo(Element movie, String link){
-        String kinoTime = "";
-        String kinoRelease;
-        Elements times = movie.getElementsByClass("movie-details__item");
+    public String getKinoTimeApollo(Element movie, Document doc){
+        Elements times = doc.getElementsByClass("movie-details__item");
         for(Element time : times){
             if(time.select(".movie-details__key").text().equals("Filmas garums")){
-                kinoTime = time.select(".movie-details__value").text();
+                return time.select(".movie-details__value").text();
             }
         }
-        Elements releases = movie.getElementsByClass("movie-details__item");
+        return "";
+
+    }
+
+    public String getKinoReleaseApollo(Element  movie, Document doc){
+        Elements releases = doc.getElementsByClass("grid__col--md-6");
+        for(Element release : releases){
+            if(release.select(".specs__key").text().equals("Kinoteātros no")){
+                return release.select(".specs__value").text();
+            }
+        }
+        return "";
+
+
+
+    }
+
+    public Movie elemensToStorageApollo(Element movie, String link, Document doc){
+        String kinoTime = getKinoTimeApollo(movie, doc);
+        String kinoRelease = getKinoReleaseApollo(movie, doc);
+
         return new Movie(movie.select(".movie-details__title").text(),
                 movie.select(".movie-details__original-title").text(),
                 kinoTime,
-                movie.select(".event-releaseDate").text(),
+                kinoRelease,
                 link);
     }
 
