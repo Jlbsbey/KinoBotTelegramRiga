@@ -5,34 +5,31 @@ import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoException;
 import com.mongodb.ServerApi;
 import com.mongodb.ServerApiVersion;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.*;
 import org.bson.Document;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Properties;
 
 public class MongoClientConnectionExample {
     public static void main(String[] args) {
-        String connectionString = "mongodb+srv://nikitasmorigo:sBxI7efFgKzbyrgK@cluster0.8bn2jvv.mongodb.net/?retryWrites=true&w=majority";
+        String URI = "mongodb+srv://nikitasmorigo:<password>@cluster0.8bn2jvv.mongodb.net/?retryWrites=true&w=majority";
+        String connectionUrl;
 
-        ServerApi serverApi = ServerApi.builder()
-                .version(ServerApiVersion.V1)
-                .build();
+        //String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
+        //String config = "config.properties";
 
-        MongoClientSettings settings = MongoClientSettings.builder()
-                .applyConnectionString(new ConnectionString(connectionString))
-                .serverApi(serverApi)
-                .build();
+        connectionUrl = URI.replace("<password>", "sBxI7efFgKzbyrgK");
+        MongoClient mongoClient = MongoClients.create(connectionUrl);
 
-        // Create a new client and connect to the server
-        try (MongoClient mongoClient = MongoClients.create(settings)) {
-            try {
-                // Send a ping to confirm a successful connection
-                MongoDatabase database = mongoClient.getDatabase("admin");
-                database.runCommand(new Document("ping", 1));
-                System.out.println("Pinged your deployment. You successfully connected to MongoDB!");
-            } catch (MongoException e) {
-                e.printStackTrace();
-            }
+        MongoDatabase database = mongoClient.getDatabase("Mafia");
+        MongoCollection<Document> collection = database.getCollection("Test");
+
+        FindIterable<Document> documents = collection.find(new Document());
+
+        for (Document document : documents) {
+            System.out.println(document.getString("name"));
         }
     }
 }
