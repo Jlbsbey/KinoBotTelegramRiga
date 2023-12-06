@@ -11,17 +11,23 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Movie {
+    private String origID;
     private String lvName;
     private String origName;
     private String length;
     private String startDate;
     private String linkTo;
-    //
-    public ArrayList<Movie> Movies = new ArrayList<>();
+    private String tempName;
+    private Movie tempMovie;
 
-    public void ScrapKino(String attr, String link){
+    //public ArrayList<Movie> Movies = new ArrayList<>();
+    public Map<String, Movie> Movies = new HashMap<>();
+
+    public Map<String, Movie> ScrapKino(String attr, String link){
         String url = link;
         URL obj;
         try {
@@ -50,12 +56,15 @@ public class Movie {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        return Movies;
     }
 
     public void ScrapForum(Document doc){
-        Elements movies = doc.getElementsByClass("event-list-item-inner");
+        Elements movies = doc.getElementsByClass("right-side-top");
         for (Element movie : movies) {
-            Movies.add(elemensToStorageForum(movie));
+            tempMovie = elemensToStorageForum(movie);
+            Movies.put(tempName, tempMovie);
+            tempName = "";
         }
     }
 
@@ -69,7 +78,9 @@ public class Movie {
     public void ScrapApolloPage(Document doc, String link){
         Elements movies = doc.getElementsByClass("main");
         for (Element movie : movies) {
-            Movies.add(elemensToStorageApollo(movie, link, doc));
+            tempMovie = elemensToStorageApollo(movie, link, doc);
+            Movies.put(tempName, tempMovie);
+            tempName = "";
         }
     }
 
@@ -80,12 +91,11 @@ public class Movie {
         }else{
             origName = movie.select(".event-original-name").text();
         }
-        System.out.println("ScrappedForum");
-
+        tempName = origName.toLowerCase();
         return new Movie(movie.select(".event-name").not(".hidden").text(),
                 origName, movie.select(".event-running-time").text(),
                 movie.select(".event-releaseDate").text().split(": ")[1],
-                "https://www.forumcinemas.lv" + movie.select(".event-name").not("hidden").select("a").attr("href"));
+                "https://www.forumcinemas.lv" + movie.select(".event-name").not("hidden").select("a").attr("href"), origName.toLowerCase());
     }
 
     public String getKinoTimeApollo(Element movie, Document doc){
@@ -115,19 +125,44 @@ public class Movie {
     public Movie elemensToStorageApollo(Element movie, String link, Document doc){
         String kinoTime = getKinoTimeApollo(movie, doc);
         String kinoRelease = getKinoReleaseApollo(movie, doc);
-
+        tempName = movie.select(".movie-details__original-title").text();
         return new Movie(movie.select(".movie-details__title").text(),
                 movie.select(".movie-details__original-title").text(),
                 kinoTime,
                 kinoRelease,
-                link);
+                link, movie.select(".movie-details__original-title").text().toLowerCase());
     }
 
-    Movie(String lvName, String origName, String length, String startDate, String linkTo){
+    Movie(String lvName, String origName, String length, String startDate, String linkTo, String origID){
         this.lvName = lvName;
         this.origName = origName;
         this.length = length;
         this.linkTo = linkTo;
         this.startDate = startDate;
+        this.origID = origID;
+    }
+
+    public String getLvName() {
+        return lvName;
+    }
+
+    public String getOrigName() {
+        return origName;
+    }
+
+    public String getLength() {
+        return length;
+    }
+
+    public String getStartDate() {
+        return startDate;
+    }
+
+    public String getLinkTo() {
+        return linkTo;
+    }
+
+    public String getOrigID() {
+        return origID;
     }
 }
