@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,7 +23,6 @@ public class Movie {
     private String tempName;
     private Movie tempMovie;
 
-    //public ArrayList<Movie> Movies = new ArrayList<>();
     public Map<String, Movie> Movies = new HashMap<>();
 
     public Map<String, Movie> ScrapKino(String attr, String link){
