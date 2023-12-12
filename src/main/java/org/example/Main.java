@@ -23,7 +23,7 @@ import static com.mongodb.client.model.Filters.eq;
 public class Main {
 
 
-    public static String URI = "mongodb+srv://nikitasmorigo:<password>@cluster0.8bn2jvv.mongodb.net/?retryWrites=true&w=majority";
+    public static String URI = "";
     static public Map<String, Movie> Movies = new HashMap<>();
     private static List<String> Cinemas = Arrays.asList(new String[6]);
     static public ArrayList<Movie> moviesOnUpdate = new ArrayList<>();
@@ -39,7 +39,6 @@ public class Main {
     }
 
     public static void setVar(){
-        String connectionUrl;
         String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
         String config = "config.properties";
         try {
@@ -52,8 +51,7 @@ public class Main {
             Cinemas.set(3, appProps.getProperty("forumLink"));
             Cinemas.set(4, appProps.getProperty("cinnamon"));
             Cinemas.set(5, appProps.getProperty("cinnamonLink"));
-            connectionUrl = URI.replace("<password>", appProps.getProperty("password"));
-            URI = connectionUrl;
+            URI = appProps.getProperty("URI");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -5,7 +5,11 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Properties;
 
 public class Bot extends TelegramLongPollingBot {
     ArrayList<Long> IDs = new ArrayList<>();
@@ -18,7 +22,19 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public String getBotToken() {
-        return "6507061463:AAGSxFwuG8wpjB7NgG_yUl4YoG2g2U_76CQ";
+        String token = "";
+        String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
+        String config = "config.properties";
+        try{
+            Properties appProps = new Properties();
+            appProps.load(new FileInputStream(rootPath + config));
+            token = appProps.getProperty("token");
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return token;
     }
 
     @Override
