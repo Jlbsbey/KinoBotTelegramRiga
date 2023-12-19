@@ -11,13 +11,22 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Properties;
 
+import static org.example.Main.*;
+
 public class Bot extends TelegramLongPollingBot {
-    ArrayList<Long> IDs = new ArrayList<>();
-    boolean isInput = false;
-    String lastCommand = "";
     @Override
     public String getBotUsername() {
         return "Kino Bot Riga";
+    }
+    public Bot(){
+        setVar();
+        clearDB();
+        Movie s;
+        s= new Movie("-1", "-1", "-1", "-1", "-1", "-1");
+        for(int i = 0; i<Cinemas.size()-2; i+=2){
+            Movies = s.ScrapKino(Cinemas.get(i), Cinemas.get(i+1));
+            addToMongo(Cinemas.get(i));
+        }
     }
 
     @Override
@@ -39,55 +48,10 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        var msg = update.getMessage();
-        var user = msg.getFrom();
-        ifExists(user.getId());
-        if(msg.isCommand()){
-            if(msg.getText().equals("/echoall")){
-                echoAll(user.getId(), false, ".");
-            }
-        }
-        if(isInput == true){
-            switch (lastCommand){
-                case "echoAll":
-                    echoAll(user.getId(), true, msg.getText());
-                    break;
-            }
-        }
 
     }
 
 
-    public void echoAll(Long userID, boolean time, String text){
-        if(!time) {
-            sendText(userID, "Send your text to echo");
-            isInput = true;
-            lastCommand = "echoAll";
-        }else{
-            for(Long id: IDs){
-                sendText(id, text);
-                isInput = false;
-            }
-        }
-    }
-
-    public boolean ifExists(Long userID){
-        boolean appears= false;
-        for (Long id : IDs) {
-            if (userID.equals(id)) {
-                appears = true;
-                return true;
-            }
-        }
-        if(appears==false){
-            addUser(userID);
-        }
-        return false;
-    }
-
-    public void addUser(Long userID){
-        IDs.add(userID);
-    }
 
     public void sendText(Long who, String what){
         SendMessage sm = SendMessage.builder()

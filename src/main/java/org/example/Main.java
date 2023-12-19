@@ -9,8 +9,10 @@ import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.InsertManyResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import com.mongodb.client.result.UpdateResult;
+import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 import javax.ws.rs.core.Link;
 import java.awt.image.CropImageFilter;
@@ -25,16 +27,18 @@ public class Main {
 
     public static String URI = "";
     static public Map<String, Movie> Movies = new HashMap<>();
-    private static List<String> Cinemas = Arrays.asList(new String[6]);
+    static List<String> Cinemas = Arrays.asList(new String[6]);
     static public ArrayList<Movie> moviesOnUpdate = new ArrayList<>();
     public static void main(String[] args) throws TelegramApiException {
+        //TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
+        //botsApi.registerBot(new Bot());
         setVar();
-        clearDB();
+        //clearDB();
         Movie s;
         s= new Movie("-1", "-1", "-1", "-1", "-1", "-1");
-        for(int i = 0; i<Cinemas.size()-2; i+=2){
+        for(int i = 2; i<Cinemas.size()-2; i+=2){
             Movies = s.ScrapKino(Cinemas.get(i), Cinemas.get(i+1));
-            addToMongo(Cinemas.get(i));
+            //addToMongo(Cinemas.get(i));
         }
     }
 
@@ -57,7 +61,7 @@ public class Main {
         }
     }
 
-    private static void addToMongo(String cinemaTheather){
+    static void addToMongo(String cinemaTheather){
 
         MongoClient mongoClient = MongoClients.create(URI);
         MongoDatabase database = mongoClient.getDatabase("filmCollection");

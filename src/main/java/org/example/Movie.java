@@ -10,8 +10,27 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+
+class Session{
+    String date;
+    String time;
+    int freePlace;
+    int totalPlace;
+    Map<String, Double> prices = new HashMap<>();
+
+    public Session(String date, String time, int freePlace, int totalPlace, Map<String, Double> prices) {
+        this.date = date;
+        this.time = time;
+        this.freePlace = freePlace;
+        this.totalPlace = totalPlace;
+        this.prices = prices;
+    }
+}
 
 public class Movie {
     private String origID;
@@ -23,7 +42,9 @@ public class Movie {
     private String tempName;
     private Movie tempMovie;
 
+
     public Map<String, Movie> Movies = new HashMap<>();
+    ArrayList<Session> times = new ArrayList();
 
     public Map<String, Movie> ScrapKino(String attr, String link){
         String url = link;
@@ -41,11 +62,13 @@ public class Movie {
             in.close();
 
             String html = response.toString();
-
             Document doc = Jsoup.parse(html);
+
             switch (attr){
                 case "forum":
                     ScrapForum(doc);
+                case "forumSession":
+                    ScrapForumSession(doc);
                 case "apollo":
                     ScrapApollo(doc);
                 case "apolloPage":
@@ -56,6 +79,7 @@ public class Movie {
         }
         return Movies;
     }
+
 
     public void ScrapForum(Document doc){
         Elements movies = doc.getElementsByClass("right-side-top");
@@ -89,12 +113,58 @@ public class Movie {
         }else{
             origName = movie.select(".event-original-name").text();
         }
+        Session temp = SessionTimeForum("https://www.forumcinemas.lv" + movie.select(".event-name").not("hidden").select("a").attr("href"));
         tempName = origName.toLowerCase();
         return new Movie(movie.select(".event-name").not(".hidden").text(),
                 origName, movie.select(".event-running-time").text(),
                 movie.select(".event-releaseDate").text().split(": ")[1],
                 "https://www.forumcinemas.lv" + movie.select(".event-name").not("hidden").select("a").attr("href"), origName.toLowerCase());
     }
+
+    private Session SessionTimeForum(String link) {
+        Pattern pattern = Pattern.compile("/event/(\\d+)/");
+        Matcher matcher = pattern.matcher(link);
+        String ID = "";
+        // Check if the pattern is found
+        if (matcher.find()) {
+            // Extract and parse the numeric value
+            ID = matcher.group(1);
+        }
+        if(!ID.isEmpty()){
+            System.out.println("https://www.forumcinemas.lv/websales/movie/" + ID + "/#page=%2Fwebsales%2Fmovie%2F"+ ID + "%2F%3Fdt%253D02.01.0001");
+            ScrapKino("forumSession", "https://www.forumcinemas.lv/websales/movie/" + ID + "/#page=%2Fwebsales%2Fmovie%2F"+ ID + "%2F%3Fdt%253D02.01.0001");
+        }
+
+        return null;
+    }
+//https://www.forumcinemas.lv/websales/movie/303712/#page=%2Fwebsales%2Fmovie%2F303712%2F%3Fdt%253D02.01.0001
+    private void ScrapForumSession(Document doc) {
+        int c=0;
+        Elements sessions = doc.getElementsByClass("show-list-item-inner");
+        for(Element ses: sessions){
+            c++;
+        }
+        System.out.println(c);
+        String time;
+        Map<String, Double> prices = new HashMap<>();
+        prices.put("Adult", 12.20);
+        prices.put("Student", 10.37);
+        prices.put("Senior", 7.70);
+        prices.put("Handicapped", 7.70);
+        for (Element ses : sessions) {
+            System.out.println(ses);
+            time = ses.select(".showTime").text().split(" ")[1].trim();
+            Session session = new Session(ses.select(".showDate").text(), time,
+                    Integer.parseInt(ses.select(".freeSeats").text()), Integer.parseInt(ses.select(".totalSeats").text()),
+                    prices);
+            System.out.println(session.date);
+            System.out.println(session.freePlace);
+            System.out.println(session.time);
+            System.out.println(session.totalPlace);
+            //times.add(session);
+        }
+    }
+
 
     public String getKinoTimeApollo(Element movie, Document doc){
         Elements times = doc.getElementsByClass("movie-details__item");
@@ -131,13 +201,14 @@ public class Movie {
                 link, movie.select(".movie-details__original-title").text().toLowerCase());
     }
 
-    Movie(String lvName, String origName, String length, String startDate, String linkTo, String origID){
+    Movie(String lvName, String origName, String length, String startDate, String linkTo, String origID/*, ArrayList<String> times*/){
         this.lvName = lvName;
         this.origName = origName;
         this.length = length;
         this.linkTo = linkTo;
         this.startDate = startDate;
         this.origID = origID;
+        //this.times = times;
     }
 
     public String getLvName() {
