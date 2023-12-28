@@ -9,6 +9,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.example.Main.*;
@@ -22,7 +24,9 @@ public class Bot extends TelegramLongPollingBot {
         setVar();
         clearDB();
         Movie s;
-        s= new Movie("-1", "-1", "-1", "-1", "-1", "-1");
+        Map<String, Double> prices = new HashMap<>();
+        ArrayList<Session> ses = new ArrayList<>();
+        s= new Movie("-1", "-1", "-1", "-1", "-1", "-1", ses);
         for(int i = 0; i<Cinemas.size()-2; i+=2){
             Movies = s.ScrapKino(Cinemas.get(i), Cinemas.get(i+1));
             addToMongo(Cinemas.get(i));

@@ -33,14 +33,17 @@ public class Main {
         //TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
         //botsApi.registerBot(new Bot());
         setVar();
-        //clearDB();
+        clearDB();
         Movie s;
-        s= new Movie("-1", "-1", "-1", "-1", "-1", "-1");
+        Map<String, Double> prices = new HashMap<>();
+        ArrayList<Session> ses = new ArrayList<>();
+        s= new Movie("-1", "-1", "-1", "-1", "-1", "-1", ses);
         for(int i = 2; i<Cinemas.size()-2; i+=2){
             Movies = s.ScrapKino(Cinemas.get(i), Cinemas.get(i+1));
-            //addToMongo(Cinemas.get(i));
+            addToMongo(Cinemas.get(i));
         }
-    }
+    }//https://www.forumcinemas.lv/websales/movie/303856/#page=%2Fwebsales%2Fmovie%2F303856%2F%3Fdt%253D02.01.0001
+    //https://www.forumcinemas.lv/websales/movie/299619/#page=%2Fwebsales%2Fmovie%2F299619%2F%3Fdt%253D02.01.0001
 
     public static void setVar(){
         String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
@@ -175,12 +178,28 @@ public class Main {
                 inCinemas.add(true);
                 break;
         }
-
         Collection<Movie> values = Movies.values();
         ArrayList<Movie> listOfValues = new ArrayList<>(values);
         ArrayList<Document> inserts = new ArrayList<Document>();
         for (Movie mov : listOfValues){
             Links.clear();
+            BasicDBList sessions = new BasicDBList();
+            for(int j=0; j<mov.getTimes().size(); j++){
+                BasicDBList time = new BasicDBList();
+                BasicDBList prices = new BasicDBList();
+                time.add(mov.getTimes().get(j).date);
+                time.add(mov.getTimes().get(j).time);
+                time.add(mov.getTimes().get(j).freePlace);
+                time.add(mov.getTimes().get(j).totalPlace);
+                time.add(mov.getTimes().get(j).theather);
+                prices.add(mov.getTimes().get(j).prices.get(0));
+                prices.add(mov.getTimes().get(j).prices.get(1));
+                prices.add(mov.getTimes().get(j).prices.get(2));
+                prices.add(mov.getTimes().get(j).prices.get(3));
+                time.add(prices);
+                sessions.add(time);
+
+            }
             switch (cinemaTheater){
                 case "apollo":
                     Links.add(mov.getLinkTo());
@@ -199,7 +218,7 @@ public class Main {
                     break;
             }
             if(!mov.getLvName().isEmpty() && !mov.getOrigName().isEmpty()){
-                inserts.add(new Document().append("lvName", mov.getLvName()).append("origName", mov.getOrigName()).append("length", mov.getLength()).append("startDate", mov.getStartDate()).append("linkTo", Links).append("cinemas", inCinemas).append("origID", mov.getOrigID()));
+                inserts.add(new Document().append("lvName", mov.getLvName()).append("origName", mov.getOrigName()).append("length", mov.getLength()).append("startDate", mov.getStartDate()).append("linkTo", Links).append("cinemas", inCinemas).append("sessions", sessions).append("origID", mov.getOrigID()));
 
             }
         }
@@ -213,3 +232,8 @@ public class Main {
         collection.deleteMany(new Document());
     }
 }
+
+/*Exception in thread "main" java.lang.NullPointerException: Cannot read field "times" because the return value of "java.util.Map.get(Object)" is null
+	at org.example.Main.MapToList(Main.java:185)
+	at org.example.Main.addToMongo(Main.java:104)
+	at org.example.Main.main(Main.java:43)*/

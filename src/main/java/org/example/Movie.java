@@ -1,15 +1,19 @@
 package org.example;
 
+import org.checkerframework.checker.units.qual.A;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,18 +21,20 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 class Session{
-    String date;
-    String time;
-    int freePlace;
-    int totalPlace;
-    Map<String, Double> prices = new HashMap<>();
+    final String date;
+    final String time;
+    final int freePlace;
+    final int totalPlace;
+    final String theather;
+    final ArrayList<Double> prices;
 
-    public Session(String date, String time, int freePlace, int totalPlace, Map<String, Double> prices) {
+    public Session(String date, String time, int freePlace, int totalPlace, ArrayList<Double> prices, String theather) {
         this.date = date;
         this.time = time;
         this.freePlace = freePlace;
         this.totalPlace = totalPlace;
         this.prices = prices;
+        this.theather = theather;
     }
 }
 
@@ -44,38 +50,23 @@ public class Movie {
 
 
     public Map<String, Movie> Movies = new HashMap<>();
-    ArrayList<Session> times = new ArrayList();
-
+    private ArrayList<Session> times = new ArrayList<>();
     public Map<String, Movie> ScrapKino(String attr, String link){
+        WebDriver webDriver = new ChromeDriver();
         String url = link;
-        URL obj;
-        try {
-            obj = new URL(url);
-            HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
-            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-            String inputLine;
-            StringBuilder response = new StringBuilder();
-
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
-            }
-            in.close();
-
-            String html = response.toString();
-            Document doc = Jsoup.parse(html);
-
-            switch (attr){
-                case "forum":
-                    ScrapForum(doc);
-                case "forumSession":
-                    ScrapForumSession(doc);
-                case "apollo":
-                    ScrapApollo(doc);
-                case "apolloPage":
-                    ScrapApolloPage(doc, link);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        webDriver.get(url);
+        Document doc = Jsoup.parse(webDriver.getPageSource());
+        webDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2));
+        webDriver.quit();
+        switch (attr){
+            case "forum":
+                ScrapForum(doc);
+            case "forumSession":
+                ScrapForumSession(doc);
+            case "apollo":
+                ScrapApollo(doc);
+            case "apolloPage":
+                ScrapApolloPage(doc, link);
         }
         return Movies;
     }
@@ -84,10 +75,18 @@ public class Movie {
     public void ScrapForum(Document doc){
         Elements movies = doc.getElementsByClass("right-side-top");
         for (Element movie : movies) {
+            times.clear();
+            tempName = "";
             tempMovie = elemensToStorageForum(movie);
             Movies.put(tempName, tempMovie);
-            tempName = "";
         }
+//        System.out.println(movies.size());
+//        for(int i=0 ;i<2; i++){
+//            times.clear();
+//            tempName = "";
+//            tempMovie = elemensToStorageForum(movies.get(i));
+//            Movies.put(tempName, tempMovie);
+//        }
     }
 
     public void ScrapApollo(Document doc){
@@ -113,15 +112,18 @@ public class Movie {
         }else{
             origName = movie.select(".event-original-name").text();
         }
-        Session temp = SessionTimeForum("https://www.forumcinemas.lv" + movie.select(".event-name").not("hidden").select("a").attr("href"));
+        String linkOnSessions = SessionTimeForum("https://www.forumcinemas.lv" + movie.select(".event-name").not("hidden").select("a").attr("href"));
         tempName = origName.toLowerCase();
+        ScrapKino("forumSession", linkOnSessions);
+        final ArrayList<Session> tempTimes = new ArrayList<>(times);
         return new Movie(movie.select(".event-name").not(".hidden").text(),
                 origName, movie.select(".event-running-time").text(),
                 movie.select(".event-releaseDate").text().split(": ")[1],
-                "https://www.forumcinemas.lv" + movie.select(".event-name").not("hidden").select("a").attr("href"), origName.toLowerCase());
+                "https://www.forumcinemas.lv" + movie.select(".event-name").not("hidden").select("a").attr("href"), origName.toLowerCase(),
+                tempTimes);
     }
 
-    private Session SessionTimeForum(String link) {
+    private String SessionTimeForum(String link) {
         Pattern pattern = Pattern.compile("/event/(\\d+)/");
         Matcher matcher = pattern.matcher(link);
         String ID = "";
@@ -132,36 +134,44 @@ public class Movie {
         }
         if(!ID.isEmpty()){
             System.out.println("https://www.forumcinemas.lv/websales/movie/" + ID + "/#page=%2Fwebsales%2Fmovie%2F"+ ID + "%2F%3Fdt%253D02.01.0001");
-            ScrapKino("forumSession", "https://www.forumcinemas.lv/websales/movie/" + ID + "/#page=%2Fwebsales%2Fmovie%2F"+ ID + "%2F%3Fdt%253D02.01.0001");
+            return "https://www.forumcinemas.lv/websales/movie/" + ID + "/#page=%2Fwebsales%2Fmovie%2F"+ ID + "%2F%3Fdt%253D02.01.0001";
         }
 
         return null;
     }
 //https://www.forumcinemas.lv/websales/movie/303712/#page=%2Fwebsales%2Fmovie%2F303712%2F%3Fdt%253D02.01.0001
     private void ScrapForumSession(Document doc) {
-        int c=0;
         Elements sessions = doc.getElementsByClass("show-list-item-inner");
-        for(Element ses: sessions){
-            c++;
-        }
-        System.out.println(c);
         String time;
-        Map<String, Double> prices = new HashMap<>();
-        prices.put("Adult", 12.20);
-        prices.put("Student", 10.37);
-        prices.put("Senior", 7.70);
-        prices.put("Handicapped", 7.70);
+        ArrayList<Double> prices = new ArrayList<>();
+        prices.add(12.20);
+        prices.add(10.37);
+        prices.add(7.70);
+        prices.add(7.70);
         for (Element ses : sessions) {
-            System.out.println(ses);
+            //System.out.println(ses);
+            int freePlaces;
+            if(ses.select(".freeSeats").text().isEmpty()){
+                freePlaces = 0;
+            }else{
+                freePlaces = Integer.parseInt(ses.select(".freeSeats").text());
+            }
+            int totalPlaces;
+            if(ses.select(".totalSeats").text().isEmpty()){
+                totalPlaces = 0;
+            }else{
+                totalPlaces = Integer.parseInt(ses.select(".totalSeats").text());
+            }
+
             time = ses.select(".showTime").text().split(" ")[1].trim();
-            Session session = new Session(ses.select(".showDate").text(), time,
-                    Integer.parseInt(ses.select(".freeSeats").text()), Integer.parseInt(ses.select(".totalSeats").text()),
-                    prices);
-            System.out.println(session.date);
-            System.out.println(session.freePlace);
-            System.out.println(session.time);
-            System.out.println(session.totalPlace);
-            //times.add(session);
+            Session session = new Session(ses.select(".showDate").text().split(" ")[1].trim(), time,
+                    freePlaces, totalPlaces,
+                    prices, "forum");
+//            System.out.println(session.date);
+//            System.out.println(session.freePlace);
+//            System.out.println(session.time);
+//            System.out.println(session.totalPlace);
+            times.add(session);
         }
     }
 
@@ -198,17 +208,17 @@ public class Movie {
                 movie.select(".movie-details__original-title").text(),
                 kinoTime,
                 kinoRelease,
-                link, movie.select(".movie-details__original-title").text().toLowerCase());
+                link, movie.select(".movie-details__original-title").text().toLowerCase(), times);
     }
 
-    Movie(String lvName, String origName, String length, String startDate, String linkTo, String origID/*, ArrayList<String> times*/){
+    Movie(String lvName, String origName, String length, String startDate, String linkTo, String origID, ArrayList<Session> times){
         this.lvName = lvName;
         this.origName = origName;
         this.length = length;
         this.linkTo = linkTo;
         this.startDate = startDate;
         this.origID = origID;
-        //this.times = times;
+        this.times = times;
     }
 
     public String getLvName() {
@@ -234,4 +244,5 @@ public class Movie {
     public String getOrigID() {
         return origID;
     }
+    public ArrayList<Session> getTimes(){ return times;}
 }
